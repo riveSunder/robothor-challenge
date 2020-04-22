@@ -15,5 +15,8 @@ RUN NVIDIA_VERSION=$NVIDIA_VERSION /app/install_nvidia.sh
 COPY robothor_challenge /app/robothor_challenge
 COPY submission.sh  ./
 COPY example_agent.py ./
+COPY setup.py ./
 
+
+CMD pip3 install -e .
 CMD ["/bin/bash"]
