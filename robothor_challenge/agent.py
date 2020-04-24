@@ -59,9 +59,26 @@ class SimpleRandomAgent(Agent):
 #            #return act
 
 
-class MyTempAgent(Agent):
+class MyTempAgent(Agent, nn.Module):
 
     def __init__(self, conv_depth=16):
+        super(MyTempAgent, self).__init__()
+
+        self.possible_targets = ['Alarm Clock', \
+                            'Apple',\
+                            'Baseball Bat',\
+                            'Basketball',\
+                            'Bowl',\
+                            'Garbage Can',\
+                            'House Plant',\
+                            'Laptop',\
+                            'Mug',\
+                            'Spray Bottle',\
+                            'Television',\
+                            'Vase']
+
+        self.possible_actions =  ['MoveAhead', 'MoveBack', 'RotateRight', \
+                'RotateLeft', 'LookUp', 'LookDown', 'Stop']
 
         num_actions = 7
         num_objects = 12
@@ -115,6 +132,7 @@ class MyTempAgent(Agent):
                 nn.ReLU(),\
                 nn.Linear(dense_hid, dense_out))
 
+        
 
     def reset(self):
         pass
@@ -134,31 +152,15 @@ class MyTempAgent(Agent):
 
         target_str = observations['object_goal']
 
-        possible_targets = ['Alarm Clock', \
-                            'Apple',\
-                            'Baseball Bat',\
-                            'Basketball',\
-                            'Bowl',\
-                            'Garbage Can',\
-                            'House Plant',\
-                            'Laptop',\
-                            'Mug',\
-                            'Spray Bottle',\
-                            'Television',\
-                            'Vase']
-
-        possible_actions =  ['MoveAhead', 'MoveBack', 'RotateRight', \
-                'RotateLeft', 'LookUp', 'LookDown', 'Stop']
-
         target_one_hot = torch.Tensor(\
-                np.array([1.0 if target_str in elem else 0.0 for elem in possible_targets]))\
+                np.array([1.0 if target_str in elem else 0.0 for elem in self.possible_targets]))\
                 .reshape(1,12)
 
 
         # get action from forward policy
         softmax_logits = self.forward(img_input, target_one_hot)
 
-        act = possible_actions[torch.argmax(softmax_logits)]
+        act = self.possible_actions[torch.argmax(softmax_logits)]
 
         return act
 

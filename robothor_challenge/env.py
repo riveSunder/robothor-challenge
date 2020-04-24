@@ -2,8 +2,12 @@
 import robothor_challenge
 from robothor_challenge import RobothorChallenge
 from robothor_challenge.agent import SimpleRandomAgent
+from robothor_challenge.agent import MyTempAgent
 
 import numpy as np
+
+import torch
+import torch.nn as nn
 
 
 ALLOWED_ACTIONS =  ['MoveAhead', 'MoveBack', 'RotateRight', 'RotateLeft', 'LookUp', 'LookDown', 'Stop']
@@ -28,6 +32,9 @@ class RobothorChallengeEnv(RobothorChallenge):
         self.stopped = False
 
 
+        obs = dict(object_goal=self.episode['object_type'], depth=event.depth_frame, rgb=event.frame)
+        return obs
+
 
     def step(self, action ):
 
@@ -47,11 +54,17 @@ class RobothorChallengeEnv(RobothorChallenge):
         if stopped:
             simobj = self.controller.last_event.get_object(self.episode['object_id'])
             reward = 1.0 * simobj['visible']
+            if reward == 1.0: print("winner!")
         else:
             reward = 0.0
 
         simobj = self.controller.last_event.get_object(self.episode['object_id'])
-        if simobj['visible']: print('Target object visible!!!')
+        if simobj['visible']: 
+            reward += 0.1
+            #print('Target object visible!!!')
+
+        # reward for keeping on
+        reward += 0.01
 
         done = stopped or self.total_steps >= self.config['max_steps']
         info = {}
@@ -68,7 +81,8 @@ if __name__ == "__main__":
     # run a quick testV 
 
     print("instantiate agent and environment")
-    agent = SimpleRandomAgent()
+    #agent = SimpleRandomAgent()
+    agent = MyTempAgent()
     env = RobothorChallengeEnv(agent=agent)
     
     done = False
@@ -78,6 +92,7 @@ if __name__ == "__main__":
         obs = env.reset()
         done = False
         sum_rewards = 0.0
+        import pdb; pdb.set_trace()
         while not done:
 
             action = agent.act(obs)
