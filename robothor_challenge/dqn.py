@@ -19,13 +19,13 @@ class DQN():
 
         # some training parameters
         self.lr = 1e-3
-        self.batch_size = 256
-        self.buffer_size = 4096
+        self.batch_size = 64
+        self.buffer_size = 512 #4096
         self.epsilon_decay = 0.99
         self.starting_epsilon = 0.99
         self.epsilon = self.starting_epsilon * 1.0
         self.min_epsilon = 0.025
-        self.update_qt_every = 256
+        self.update_qt_every = 32
         self.gamma = 0.95
 
         # train on this device
@@ -136,7 +136,8 @@ class DQN():
 
 
 
-    def train(self, max_epochs=256):
+    def train(self, max_epochs=1024):
+
 
         optimizer = torch.optim.Adam(self.q.parameters(), lr=self.lr)
 
@@ -145,18 +146,24 @@ class DQN():
 
         for epoch in range(max_epochs):
 
-
             self.q.zero_grad()
 
             l_obs_x, l_obs_one_hot, l_rew, l_act, l_next_obs_x, \
-                    l_next_obs_one_hot, l_done = self.get_episodes()
+                    l_next_obs_one_hot, l_done = self.get_episodes(steps=self.buffer_size)
 
-            loss = self.compute_q_loss(l_obs_x, l_obs_one_hot, l_rew, l_act,\
-                    l_next_obs_x, l_next_obs_one_hot, l_done)
+            for batch in range(0,self.buffer_size-self.batch_size, self.batch_size):
 
-            loss.backward()
+                loss = self.compute_q_loss(l_obs_x[batch:batch+self.batch_size],\
+                        l_obs_one_hot[batch:batch+self.batch_size], \
+                        l_rew[batch:batch+self.batch_size], \
+                        l_act[batch:batch+self.batch_size],\
+                        l_next_obs_x[batch:batch+self.batch_size], \
+                        l_next_obs_one_hot[batch:batch+self.batch_size], \
+                        l_done[batch:batch+self.batch_size])
 
-            optimizer.step()
+                loss.backward()
+
+                optimizer.step()
 
             print("loss at epoch {}: {:.3e}".format(epoch, loss))
 
@@ -168,6 +175,11 @@ class DQN():
                 for param in self.qt.parameters():
                     param.requires_grad = False
             
+            for my_buffer in [l_obs_x, l_obs_one_hot, l_rew, l_act, l_next_obs_x, l_next_obs_one_hot,\
+                    l_done]:
+                del my_buffer
+
+
 
             self.epsilon = np.max([self.min_epsilon, self.epsilon*self.epsilon_decay])
         
